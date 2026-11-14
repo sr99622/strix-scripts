@@ -1,0 +1,7 @@
+#!/usr/bin/env fish
+
+nvtop -s | jq -r '
+  .. | objects | .mem_used? // empty
+  | (tonumber / 1073741824 * 100 | round / 100)
+  | "GPU memory used: \(.) GiB"
+'

@@ -1,0 +1,26 @@
+#!/usr/bin/env fish
+
+argparse 'port=' 'ctx-size=' -- $argv
+or exit 1
+
+set -l port 8033
+if set -q _flag_port
+    set port $_flag_port
+end
+
+set -l ctx_size 131072
+if set -q _flag_ctx_size
+    set ctx_size $_flag_ctx_size
+end
+
+set -lx LLAMA_CACHE "$HOME/Projects/llama.cpp/models/gpt-oss-120b"
+
+"$HOME/Projects/llama.cpp/build/bin/llama-server" \
+    -hf lmstudio-community/gpt-oss-120b-GGUF:MXFP4 \
+    --ctx-size "$ctx_size" \
+    --n-gpu-layers 999 \
+    --flash-attn on \
+    --jinja \
+    --host 0.0.0.0 \
+    --port "$port" \
+    --alias gpt-oss-120b
