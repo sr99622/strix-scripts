@@ -1,26 +1,13 @@
 #!/usr/bin/env fish
 
-argparse 'port=' 'ctx-size=' -- $argv
-or exit 1
+# TO INSTALL podman:
+# sudo pacman -S --needed podman
+# mkdir -p $HOME/halogen-models
 
-set -l port 8033
-if set -q _flag_port
-    set port $_flag_port
-end
-
-set -l ctx_size 262144
-if set -q _flag_ctx_size
-    set ctx_size $_flag_ctx_size
-end
-
-set -lx LLAMA_CACHE "$HOME/Projects/llama.cpp/unsloth/Qwen3.8-Flash-Next-GGUF"
-"$HOME/Projects/llama.cpp/build/bin/llama-server" \
-    -hf unsloth/Qwen3.8-Flash-Next-GGUF:UD-Q4_K_XL \
-    --ctx-size "$ctx_size" \
-    --temp 1.0 \
-    --top-p 0.95 \
-    --top-k 20 \
-    --min-p 0.00 \
-    --n-gpu-layers 999 \
-    --host 0.0.0.0 --port "$port" \
-    --alias "Qwen3.8-Flash-Next" --jinja
+podman run --rm -p 0.0.0.0:8731:8731 \
+    --device /dev/kfd --device /dev/dri \
+    --group-add keep-groups \
+    --ipc=host --ulimit memlock=-1:-1 \
+    -e HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-flash-next \
+    -v ~/halogen-models:/models \
+    ghcr.io/peonist-ai/halogen-flash-server:0.20.4
