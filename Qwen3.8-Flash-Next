@@ -1,5 +1,6 @@
 #!/usr/bin/env fish
 
+# https://github.com/peonist-ai/halogen-flash-server
 # TO INSTALL podman:
 # sudo pacman -S --needed podman
 # mkdir -p $HOME/halogen-models
