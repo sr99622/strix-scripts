@@ -10,5 +10,6 @@ podman run --rm -p 0.0.0.0:8731:8731 \
     --group-add keep-groups \
     --ipc=host --ulimit memlock=-1:-1 \
     -e HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-flash-next \
+    -e HALOGEN_VISION_TOWER=1 \
     -v ~/halogen-models:/models \
     ghcr.io/peonist-ai/halogen-flash-server:0.20.4
