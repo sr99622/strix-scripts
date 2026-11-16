@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""imgdescribe — ask the halogen vision model to describe an image file.
+
+Usage:
+    imgdescribe IMAGE [PROMPT]
+
+Environment:
+    HALOGEN_URL    API base URL (default: http://10.1.1.4:8731/v1)
+    HALOGEN_MODEL  model id   (default: halogen-qwen3.8-flash-next)
+"""
+import base64
+import json
+import mimetypes
+import os
+import sys
+import urllib.error
+import urllib.request
+
+BASE_URL = os.environ.get("HALOGEN_URL", "http://10.1.1.4:8731/v1")
+MODEL = os.environ.get("HALOGEN_MODEL", "halogen-qwen3.8-flash-next")
+DEFAULT_PROMPT = "Describe this image in detail: setting, objects, people, text, lighting."
+
+MIME_BY_EXT = {
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+    ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp",
+}
+
+
+def main() -> int:
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        print(__doc__.strip(), file=sys.stderr)
+        return 2
+
+    path = sys.argv[1]
+    prompt = sys.argv[2] if len(sys.argv) > 2 else DEFAULT_PROMPT
+
+    if not os.path.isfile(path):
+        print(f"error: file not found: {path}", file=sys.stderr)
+        return 1
+
+    mime = MIME_BY_EXT.get(os.path.splitext(path)[1].lower())
+    if mime is None:
+        mime = mimetypes.guess_type(path)[0] or "application/octet-stream"
+    if not mime.startswith("image/"):
+        print(f"error: not an image ({mime}): {path}", file=sys.stderr)
+        return 1
+
+    b64 = base64.b64encode(open(path, "rb").read()).decode()
+
+    body = json.dumps({
+        "model": MODEL,
+        "messages": [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url",
+                 "image_url": {"url": f"data:{mime};base64,{b64}"}},
+            ],
+        }],
+    }).encode()
+
+    req = urllib.request.Request(
+        f"{BASE_URL}/chat/completions",
+        data=body,
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            data = json.load(resp)
+    except urllib.error.URLError as e:
+        print(f"error: request failed: {e}", file=sys.stderr)
+        return 1
+    except (ValueError, KeyError) as e:
+        print(f"error: bad response: {e}", file=sys.stderr)
+        return 1
+
+    try:
+        text = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError):
+        print("error: no content in response", file=sys.stderr)
+        print(json.dumps(data, indent=2)[:1000], file=sys.stderr)
+        return 1
+
+    # Some reasoning models return empty content with the answer in
+    # reasoning_content; fall back to that if present.
+    if not (text or "").strip():
+        text = data["choices"][0]["message"].get("reasoning_content") or ""
+    print(text.strip())
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
