@@ -15,9 +15,12 @@ import os
 import sys
 import urllib.error
 import urllib.request
+import time
 
-BASE_URL = os.environ.get("HALOGEN_URL", "http://10.1.1.4:8731/v1")
-MODEL = os.environ.get("HALOGEN_MODEL", "halogen-qwen3.8-flash-next")
+#BASE_URL = os.environ.get("HALOGEN_URL", "http://10.1.1.4:8731/v1")
+#MODEL = os.environ.get("HALOGEN_MODEL", "halogen-qwen3.8-flash-next")
+BASE_URL = os.environ.get("HALOGEN_URL", "http://10.1.1.2:8080/v1")
+MODEL = os.environ.get("HALOGEN_MODEL", "Qwen3.8-27B")
 DEFAULT_PROMPT = "Describe this image in detail: setting, objects, people, text, lighting."
 
 MIME_BY_EXT = {
@@ -89,5 +92,13 @@ def main() -> int:
     return 0
 
 
+#if __name__ == "__main__":
+#    sys.exit(main())
+
 if __name__ == "__main__":
-    sys.exit(main())
+    started = time.perf_counter()
+    try:
+        sys.exit(main())
+    finally:
+        elapsed = time.perf_counter() - started
+        print(f"Elapsed: {elapsed:.3f} s", file=sys.stderr)
